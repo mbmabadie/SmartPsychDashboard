@@ -12,12 +12,31 @@ import Stats from './pages/Stats';
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
+// ✅ عنوان الـ API الصحيح
+const PRODUCTION_API_URL = 'https://api.smartpsych.cloud/api';
+
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
-  const defaultApiUrl = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3000/api' 
-    : `${window.location.origin}/api`;
-  const [apiUrl, setApiUrl] = useState(localStorage.getItem('admin_api_url') || defaultApiUrl);
+
+  const defaultApiUrl = window.location.hostname === 'localhost'
+    ? 'http://localhost:3000/api'
+    : PRODUCTION_API_URL;
+
+  // ✅ تنظيف الـ URL القديم المخزن إذا كان غلط
+  // (أي URL على dashboard.smartpsych.cloud كان غلط لأن الـ API على api.smartpsych.cloud)
+  const savedApiUrl = localStorage.getItem('admin_api_url');
+  const isStaleUrl = savedApiUrl && (
+    savedApiUrl.includes('dashboard.smartpsych.cloud') ||
+    savedApiUrl.includes('YOUR_SERVER_IP')
+  );
+
+  if (isStaleUrl) {
+    localStorage.removeItem('admin_api_url');
+  }
+
+  const [apiUrl, setApiUrl] = useState(
+    (isStaleUrl ? null : savedApiUrl) || defaultApiUrl
+  );
 
   const isAuth = !!token;
 
