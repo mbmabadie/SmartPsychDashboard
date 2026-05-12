@@ -1,218 +1,81 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import Modal from '../components/Modal';
 
-const displayTypes = [
-  { value: 'radio_list', label: 'قائمة عمودية' },
-  { value: 'card_select', label: 'بطاقات' },
-  { value: 'emoji_scale', label: 'إيموجي' },
-  { value: 'slider_select', label: 'شريط تمرير' },
-  { value: 'image_cards', label: 'بطاقات مع أيقونات' },
-];
-
-const defaultOptions = [
-  { option_text_ar: 'أبداً', option_value: 0, emoji: '😊' },
-  { option_text_ar: 'أحياناً', option_value: 1, emoji: '😐' },
-  { option_text_ar: 'كثيراً', option_value: 2, emoji: '😔' },
-  { option_text_ar: 'دائماً', option_value: 3, emoji: '😢' },
-];
-
 export default function Assessments() {
   const { api } = useAuth();
+  const navigate = useNavigate();
   const [assessments, setAssessments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [showRotation, setShowRotation] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(''); // ✅ رسالة خطأ
-
-  const [form, setForm] = useState({ title_ar: '', title: '', description_ar: '', category: 'mental_health', questions: [] });
-
-  const [rotAssessment, setRotAssessment] = useState(null);
-  const [rotQuestions, setRotQuestions] = useState([]);
-  const [rotDisplayTypes, setRotDisplayTypes] = useState({});
-  const [rotForm, setRotForm] = useState({ title: '', start_date: '', end_date: '' });
-  const [creatingRot, setCreatingRot] = useState(false);
-  const [rotErrorMsg, setRotErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [form, setForm] = useState({
+    title_ar: '',
+    description_ar: '',
+    category: 'mental_health',
+  });
 
   useEffect(() => { loadAssessments(); }, []);
 
   const loadAssessments = async () => {
+    setLoading(true);
     try {
       const res = await api('/assessments/all');
       if (res.success) setAssessments(res.data);
     } catch (e) { console.error(e); }
+    setLoading(false);
   };
 
-  const addQuestion = () => {
-    setForm({
-      ...form,
-      questions: [...form.questions, {
-        question_text_ar: '',
-        options: defaultOptions.map((o) => ({ ...o })),
-      }],
-    });
-  };
-
-  const updateQuestion = (qi, key, value) => {
-    const qs = [...form.questions];
-    qs[qi] = { ...qs[qi], [key]: value };
-    setForm({ ...form, questions: qs });
-  };
-
-  const removeQuestion = (qi) => {
-    setForm({ ...form, questions: form.questions.filter((_, i) => i !== qi) });
-  };
-
-  const updateOption = (qi, oi, key, value) => {
-    const qs = [...form.questions];
-    qs[qi].options[oi] = { ...qs[qi].options[oi], [key]: value };
-    setForm({ ...form, questions: qs });
-  };
-
-  const addOption = (qi) => {
-    const qs = [...form.questions];
-    qs[qi].options.push({ option_text_ar: '', option_value: qs[qi].options.length, emoji: '' });
-    setForm({ ...form, questions: qs });
-  };
-
-  const removeOption = (qi, oi) => {
-    const qs = [...form.questions];
-    qs[qi].options = qs[qi].options.filter((_, i) => i !== oi);
-    setForm({ ...form, questions: qs });
-  };
-
-  // ═══════════════════════════════════════════════════════════
-  // ✅ Create Assessment — مع validation + error handling صحيح
-  // ═══════════════════════════════════════════════════════════
   const createAssessment = async () => {
     setErrorMsg('');
-
-    // ✅ Validation
     if (!form.title_ar?.trim()) {
-      setErrorMsg('العنوان بالعربية مطلوب');
+      setErrorMsg('العنوان مطلوب');
       return;
-    }
-    if (form.questions.length === 0) {
-      setErrorMsg('يجب إضافة سؤال واحد على الأقل');
-      return;
-    }
-    for (let i = 0; i < form.questions.length; i++) {
-      const q = form.questions[i];
-      if (!q.question_text_ar?.trim()) {
-        setErrorMsg(`السؤال ${i + 1}: نص السؤال مطلوب`);
-        return;
-      }
-      if (!q.options || q.options.length < 2) {
-        setErrorMsg(`السؤال ${i + 1}: يجب أن يحتوي على خيارين على الأقل`);
-        return;
-      }
-      for (let j = 0; j < q.options.length; j++) {
-        if (!q.options[j].option_text_ar?.trim()) {
-          setErrorMsg(`السؤال ${i + 1} - الخيار ${j + 1}: النص مطلوب`);
-          return;
-        }
-      }
     }
 
     setCreating(true);
     try {
-      // ✅ تأكيد إن في title إنجليزي (نسخه من العربي لو فاضي)
-      const payload = {
-        ...form,
-        title: form.title?.trim() || form.title_ar.trim(),
-        // ✅ نسخ النصوص العربية لو الإنجليزية فاضية (لأن الـ DB columns NOT NULL)
-        description: form.description?.trim() || form.description_ar?.trim() || '',
-        questions: form.questions.map(q => ({
-          ...q,
-          question_text: q.question_text?.trim() || q.question_text_ar.trim(),
-          options: q.options.map(o => ({
-            ...o,
-            option_text: o.option_text?.trim() || o.option_text_ar.trim(),
-          })),
-        })),
-      };
-
       const res = await api('/assessments/create', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...form,
+          title: form.title_ar.trim(),
+          description: form.description_ar?.trim() || '',
+          questions: [],
+        }),
       });
 
       if (res.success) {
         setShowCreate(false);
-        setForm({ title_ar: '', title: '', description_ar: '', category: 'mental_health', questions: [] });
-        setErrorMsg('');
-        await loadAssessments();
+        setForm({ title_ar: '', description_ar: '', category: 'mental_health' });
+        navigate(`/assessments/${res.data.id}`);
       } else {
-        // ✅ عرض رسالة الخطأ من السيرفر
-        setErrorMsg(res.message || 'فشل إنشاء الاختبار');
-        console.error('Create failed:', res);
+        setErrorMsg(res.message || 'فشل الإنشاء');
       }
     } catch (e) {
-      console.error(e);
-      setErrorMsg('خطأ في الاتصال: ' + e.message);
+      setErrorMsg('خطأ: ' + e.message);
     } finally {
       setCreating(false);
     }
   };
 
-  const openRotation = async (assessment) => {
-    setRotAssessment(assessment);
-    setRotErrorMsg('');
+  const deleteAssessment = async (id, e) => {
+    e.stopPropagation();
+    if (!confirm('حذف الاختبار وكل أسئلته ودوراته؟')) return;
     try {
-      const res = await api(`/assessments/${assessment.id}`);
-      if (res.success) {
-        const qs = res.data.questions || [];
-        setRotQuestions(qs);
-        const dt = {};
-        qs.forEach((q) => { dt[q.id] = 'radio_list'; });
-        setRotDisplayTypes(dt);
-        setShowRotation(true);
-      } else {
-        alert('فشل تحميل الأسئلة: ' + (res.message || ''));
-      }
+      const res = await api(`/assessments/${id}`, { method: 'DELETE' });
+      if (res.success) loadAssessments();
     } catch (e) { console.error(e); }
   };
 
-  const createRotation = async () => {
-    setRotErrorMsg('');
-
-    if (!rotForm.start_date || !rotForm.end_date) {
-      setRotErrorMsg('تاريخ البداية والنهاية مطلوب');
-      return;
-    }
-    if (new Date(rotForm.end_date) < new Date(rotForm.start_date)) {
-      setRotErrorMsg('تاريخ النهاية يجب أن يكون بعد البداية');
-      return;
-    }
-    if (rotQuestions.length === 0) {
-      setRotErrorMsg('لا توجد أسئلة');
-      return;
-    }
-
-    setCreatingRot(true);
-    try {
-      const questions = rotQuestions.map((q) => ({
-        question_id: q.id,
-        display_type: rotDisplayTypes[q.id] || 'radio_list',
-      }));
-      const res = await api('/assessments/rotations/create', {
-        method: 'POST',
-        body: JSON.stringify({ assessment_id: rotAssessment.id, ...rotForm, questions }),
-      });
-      if (res.success) {
-        setShowRotation(false);
-        setRotForm({ title: '', start_date: '', end_date: '' });
-        setRotErrorMsg('');
-        await loadAssessments();
-      } else {
-        setRotErrorMsg(res.message || 'فشل إنشاء الدورة');
-      }
-    } catch (e) {
-      console.error(e);
-      setRotErrorMsg('خطأ في الاتصال: ' + e.message);
-    } finally {
-      setCreatingRot(false);
-    }
+  const categoryLabels = {
+    mental_health: 'صحة نفسية',
+    anxiety: 'قلق',
+    depression: 'اكتئاب',
+    stress: 'ضغط نفسي',
+    general: 'عام',
   };
 
   return (
@@ -220,154 +83,125 @@ export default function Assessments() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">الاختبارات</h1>
-          <p className="text-gray-500">إدارة الاختبارات النفسية والدورات</p>
+          <p className="text-gray-500">إدارة الاختبارات النفسية - اضغط على اختبار لإدارة أسئلته ودوراته</p>
         </div>
-        <button onClick={() => { setShowCreate(true); setErrorMsg(''); }} className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium">
+        <button onClick={() => { setShowCreate(true); setErrorMsg(''); }}
+          className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium">
           + اختبار جديد
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {loading && <div className="text-center text-gray-400 py-12">جاري التحميل...</div>}
+
+      {!loading && assessments.length === 0 && (
+        <div className="text-center text-gray-400 py-12 bg-white rounded-xl border-2 border-dashed border-gray-200">
+          <div className="text-4xl mb-2">📋</div>
+          <div>لا يوجد اختبارات بعد</div>
+          <div className="text-sm">ابدأ بإنشاء اختبار جديد</div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {assessments.map((a) => (
-          <div key={a.id} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <div key={a.id}
+            onClick={() => navigate(`/assessments/${a.id}`)}
+            className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer">
             <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="font-bold text-gray-800">{a.title_ar || a.title}</h3>
-                <p className="text-xs text-gray-500">{a.category}</p>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-800 text-lg">{a.title_ar || a.title}</h3>
+                <span className="inline-block mt-1 text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                  {categoryLabels[a.category] || a.category}
+                </span>
               </div>
               <span className={`text-xs px-2 py-1 rounded ${a.is_active ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
                 {a.is_active ? 'نشط' : 'معطل'}
               </span>
             </div>
-            {a.description_ar && <div className="text-sm text-gray-600 mb-3">{a.description_ar}</div>}
-            <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
-              <span>{a.questions_count} سؤال · {a.rotations_count} دورة</span>
-              <button onClick={() => openRotation(a)} className="text-primary-500 hover:underline">إدارة الدورات</button>
+
+            {a.description_ar && (
+              <div className="text-sm text-gray-600 mb-3 line-clamp-2">{a.description_ar}</div>
+            )}
+
+            <div className="grid grid-cols-3 gap-2 mb-3 pt-3 border-t border-gray-100">
+              <div className="text-center">
+                <div className="text-xl font-bold text-gray-800">{a.questions_count}</div>
+                <div className="text-xs text-gray-500">سؤال</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-gray-800">{a.rotations_count}</div>
+                <div className="text-xs text-gray-500">دورة</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-xl font-bold ${a.active_rotations_count > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                  {a.active_rotations_count || 0}
+                </div>
+                <div className="text-xs text-gray-500">نشطة الآن</div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button className="flex-1 text-sm text-primary-600 bg-primary-50 hover:bg-primary-100 py-2 rounded-lg font-medium">
+                إدارة →
+              </button>
+              <button onClick={(e) => deleteAssessment(a.id, e)}
+                className="text-sm text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg">
+                حذف
+              </button>
             </div>
           </div>
         ))}
       </div>
-      {assessments.length === 0 && (
-        <div className="text-center text-gray-400 py-12">لا يوجد اختبارات. اضغط "اختبار جديد" لإنشاء واحد.</div>
-      )}
 
-      {/* Create Assessment Modal */}
+      {/* Create Modal — مبسط جداً، بس العنوان والفئة */}
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="إنشاء اختبار جديد">
         <div className="space-y-4">
-          {/* ✅ عرض رسائل الخطأ */}
           {errorMsg && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">
               ⚠️ {errorMsg}
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <input type="text" value={form.title_ar} onChange={(e) => setForm({ ...form, title_ar: e.target.value })}
-              placeholder="العنوان بالعربية *" className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary-500" />
-            <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Title in English (اختياري)" className="px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary-500" />
+          <div>
+            <label className="text-sm text-gray-600 block mb-1">عنوان الاختبار *</label>
+            <input type="text" value={form.title_ar}
+              onChange={(e) => setForm({ ...form, title_ar: e.target.value })}
+              placeholder="مثل: اختبار القلق العام"
+              className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
-          <textarea value={form.description_ar} onChange={(e) => setForm({ ...form, description_ar: e.target.value })}
-            placeholder="الوصف" rows={2} className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary-500" />
-          <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg outline-none">
-            <option value="mental_health">صحة نفسية</option>
-            <option value="anxiety">قلق</option>
-            <option value="depression">اكتئاب</option>
-            <option value="stress">ضغط نفسي</option>
-            <option value="general">عام</option>
-          </select>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="font-medium">الأسئلة ({form.questions.length})</label>
-              <button onClick={addQuestion} className="text-primary-500 text-sm hover:underline">+ سؤال</button>
-            </div>
-            <div className="space-y-3">
-              {form.questions.map((q, qi) => (
-                <div key={qi} className="border border-gray-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <input type="text" value={q.question_text_ar} onChange={(e) => updateQuestion(qi, 'question_text_ar', e.target.value)}
-                      placeholder={`السؤال ${qi + 1} *`} className="flex-1 px-3 py-2 border rounded outline-none focus:ring-2 focus:ring-primary-500" />
-                    <button onClick={() => removeQuestion(qi)} className="text-red-500 px-2 hover:bg-red-50 rounded">✕</button>
-                  </div>
-                  <div className="space-y-2 mr-4">
-                    {q.options.map((o, oi) => (
-                      <div key={oi} className="flex items-center gap-2">
-                        <input type="text" value={o.option_text_ar} onChange={(e) => updateOption(qi, oi, 'option_text_ar', e.target.value)}
-                          placeholder="نص الخيار *" className="flex-1 px-2 py-1 border rounded text-sm outline-none" />
-                        <input type="number" value={o.option_value} onChange={(e) => updateOption(qi, oi, 'option_value', parseInt(e.target.value) || 0)}
-                          placeholder="القيمة" className="w-20 px-2 py-1 border rounded text-sm outline-none" />
-                        <input type="text" value={o.emoji} onChange={(e) => updateOption(qi, oi, 'emoji', e.target.value)}
-                          placeholder="😊" className="w-16 px-2 py-1 border rounded text-sm text-center outline-none" />
-                        <button onClick={() => removeOption(qi, oi)} className="text-red-500 hover:bg-red-50 rounded px-1">✕</button>
-                      </div>
-                    ))}
-                    <button onClick={() => addOption(qi)} className="text-primary-500 text-xs hover:underline">+ خيار</button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <label className="text-sm text-gray-600 block mb-1">الوصف (اختياري)</label>
+            <textarea value={form.description_ar}
+              onChange={(e) => setForm({ ...form, description_ar: e.target.value })}
+              rows={2}
+              className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary-500" />
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-600 block mb-1">الفئة</label>
+            <select value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              className="w-full px-4 py-2 border rounded-lg outline-none">
+              <option value="mental_health">صحة نفسية</option>
+              <option value="anxiety">قلق</option>
+              <option value="depression">اكتئاب</option>
+              <option value="stress">ضغط نفسي</option>
+              <option value="general">عام</option>
+            </select>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-lg text-sm">
+            💡 بعد إنشاء الاختبار رح تنتقل لصفحة التفاصيل لإضافة الأسئلة والدورات
           </div>
 
           <div className="flex gap-2 pt-4">
             <button onClick={createAssessment} disabled={creating}
               className="flex-1 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50">
-              {creating ? 'جاري الإنشاء...' : 'إنشاء'}
+              {creating ? 'جاري الإنشاء...' : 'إنشاء الاختبار'}
             </button>
-            <button onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">إلغاء</button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Create Rotation Modal */}
-      <Modal open={showRotation} onClose={() => setShowRotation(false)} title="إنشاء دورة جديدة" maxWidth="max-w-xl">
-        <div className="space-y-4">
-          {rotErrorMsg && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm">
-              ⚠️ {rotErrorMsg}
-            </div>
-          )}
-
-          <input type="text" value={rotForm.title} onChange={(e) => setRotForm({ ...rotForm, title: e.target.value })}
-            placeholder="عنوان الدورة (مثل: الأسبوع الأول)" className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary-500" />
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-gray-500">من *</label>
-              <input type="date" value={rotForm.start_date} onChange={(e) => setRotForm({ ...rotForm, start_date: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg outline-none" />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500">إلى *</label>
-              <input type="date" value={rotForm.end_date} onChange={(e) => setRotForm({ ...rotForm, end_date: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg outline-none" />
-            </div>
-          </div>
-
-          <div>
-            <label className="font-medium mb-2 block">شكل عرض كل سؤال</label>
-            <div className="space-y-2">
-              {rotQuestions.map((q, qi) => (
-                <div key={q.id} className="flex items-center gap-2">
-                  <span className="flex-1 text-sm">{qi + 1}. {q.question_text_ar || q.question_text}</span>
-                  <select value={rotDisplayTypes[q.id] || 'radio_list'}
-                    onChange={(e) => setRotDisplayTypes({ ...rotDisplayTypes, [q.id]: e.target.value })}
-                    className="px-2 py-1 border rounded text-sm outline-none">
-                    {displayTypes.map((dt) => (
-                      <option key={dt.value} value={dt.value}>{dt.label}</option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <button onClick={createRotation} disabled={creatingRot}
-              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50">
-              {creatingRot ? 'جاري الإنشاء...' : 'إنشاء الدورة'}
+            <button onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
+              إلغاء
             </button>
-            <button onClick={() => setShowRotation(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">إلغاء</button>
           </div>
         </div>
       </Modal>

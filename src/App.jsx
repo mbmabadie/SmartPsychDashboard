@@ -6,13 +6,12 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import UserDetails from './pages/UserDetails';
 import Assessments from './pages/Assessments';
+import AssessmentDetail from './pages/AssessmentDetail';
 import Stats from './pages/Stats';
 
-// Auth Context
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
-// ✅ عنوان الـ API الصحيح
 const PRODUCTION_API_URL = 'https://api.smartpsych.cloud/api';
 
 export default function App() {
@@ -22,8 +21,6 @@ export default function App() {
     ? 'http://localhost:3000/api'
     : PRODUCTION_API_URL;
 
-  // ✅ تنظيف الـ URL القديم المخزن إذا كان غلط
-  // (أي URL على dashboard.smartpsych.cloud كان غلط لأن الـ API على api.smartpsych.cloud)
   const savedApiUrl = localStorage.getItem('admin_api_url');
   const isStaleUrl = savedApiUrl && (
     savedApiUrl.includes('dashboard.smartpsych.cloud') ||
@@ -55,7 +52,6 @@ export default function App() {
     localStorage.setItem('admin_api_url', url);
   };
 
-  // API helper
   const api = async (path, options = {}) => {
     const res = await fetch(`${apiUrl}${path}`, {
       ...options,
@@ -89,6 +85,7 @@ export default function App() {
             <Route path="/users" element={<Users />} />
             <Route path="/users/:id" element={<UserDetails />} />
             <Route path="/assessments" element={<Assessments />} />
+            <Route path="/assessments/:id" element={<AssessmentDetail />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
