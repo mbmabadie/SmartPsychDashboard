@@ -80,13 +80,13 @@ export default function Assessments() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">الاختبارات</h1>
-          <p className="text-gray-500">إدارة الاختبارات النفسية - اضغط على اختبار لإدارة أسئلته ودوراته</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">الاختبارات</h1>
+          <p className="text-sm text-gray-500">إدارة الاختبارات النفسية - اضغط على اختبار لإدارة أسئلته ودوراته</p>
         </div>
         <button onClick={() => { setShowCreate(true); setErrorMsg(''); }}
-          className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium">
+          className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium whitespace-nowrap">
           + اختبار جديد
         </button>
       </div>

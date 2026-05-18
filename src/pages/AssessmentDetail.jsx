@@ -272,22 +272,22 @@ export default function AssessmentDetail() {
         → كل الاختبارات
       </button>
 
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
-        <div className="flex items-start justify-between mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">{assessment.title_ar}</h1>
+      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-2">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 break-words">{assessment.title_ar}</h1>
             <span className="inline-block mt-2 text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
               {categoryLabels[assessment.category] || assessment.category}
             </span>
           </div>
-          <span className={`text-xs px-3 py-1 rounded ${assessment.is_active ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+          <span className={`text-xs px-3 py-1 rounded self-start ${assessment.is_active ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
             {assessment.is_active ? 'نشط' : 'معطل'}
           </span>
         </div>
         {assessment.description_ar && (
-          <p className="text-gray-600 mt-2">{assessment.description_ar}</p>
+          <p className="text-gray-600 mt-2 text-sm sm:text-base">{assessment.description_ar}</p>
         )}
-        <div className="flex gap-6 mt-4 pt-4 border-t border-gray-100 text-sm">
+        <div className="flex flex-wrap gap-4 sm:gap-6 mt-4 pt-4 border-t border-gray-100 text-sm">
           <div><span className="font-bold">{assessment.questions?.length || 0}</span> سؤال</div>
           <div><span className="font-bold">{rotations.length}</span> دورة</div>
           <div>الحد الأقصى: <span className="font-bold">{assessment.max_score || 0}</span></div>
@@ -328,25 +328,25 @@ export default function AssessmentDetail() {
           <div className="space-y-3">
             {assessment.questions?.map((q, qi) => (
               <div key={q.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-400">#{qi + 1}</span>
-                      <h3 className="font-bold text-gray-800">{q.question_text_ar || q.question_text}</h3>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs font-bold text-gray-400 mt-1">#{qi + 1}</span>
+                      <h3 className="font-bold text-gray-800 break-words">{q.question_text_ar || q.question_text}</h3>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <button onClick={() => openEditQuestion(q)}
                       className="text-sm text-blue-600 hover:bg-blue-50 px-3 py-1 rounded">تعديل</button>
                     <button onClick={() => deleteQuestion(q.id)}
                       className="text-sm text-red-600 hover:bg-red-50 px-3 py-1 rounded">حذف</button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                   {q.options?.map((o) => (
                     <div key={o.id} className="bg-gray-50 rounded px-3 py-2 text-sm flex items-center gap-2">
                       {o.emoji && <span>{o.emoji}</span>}
-                      <span className="flex-1">{o.option_text_ar || o.option_text}</span>
+                      <span className="flex-1 break-words">{o.option_text_ar || o.option_text}</span>
                       <span className="text-xs text-gray-400">({o.option_value})</span>
                     </div>
                   ))}
@@ -383,9 +383,9 @@ export default function AssessmentDetail() {
               const badge = statusBadges[r.status_label] || statusBadges.disabled;
               return (
                 <div key={r.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         <h3 className="font-bold text-gray-800">{r.title || 'بدون عنوان'}</h3>
                         <span className={`text-xs px-2 py-1 rounded ${badge.cls}`}>{badge.label}</span>
                       </div>
@@ -393,7 +393,7 @@ export default function AssessmentDetail() {
                         من {(r.start_date || '').split('T')[0]} إلى {(r.end_date || '').split('T')[0]}
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0 flex-wrap">
                       <button onClick={() => toggleRotation(r.id)}
                         className={`text-sm px-3 py-1 rounded ${r.is_active ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}`}>
                         {r.is_active ? 'إيقاف' : 'تفعيل'}
