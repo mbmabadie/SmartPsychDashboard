@@ -387,7 +387,7 @@ export default function AssessmentDetail() {
 
           <div className="space-y-3">
             {assessment.questions?.map((q, qi) => (
-              <div key={q.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div key={q.id} className="panel p-4">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2">
@@ -404,7 +404,7 @@ export default function AssessmentDetail() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                   {q.options?.map((o) => (
-                    <div key={o.id} className="bg-gray-50 rounded px-3 py-2 text-sm flex items-center gap-2">
+                    <div key={o.id} className="bg-paper rounded px-3 py-2 text-sm flex items-center gap-2">
                       {o.emoji && <span>{o.emoji}</span>}
                       <span className="flex-1 break-words">{o.option_text_ar || o.option_text}</span>
                       <span className="text-xs text-gray-400">({o.option_value})</span>
@@ -421,7 +421,7 @@ export default function AssessmentDetail() {
       {activeTab === 'rotations' && (
         <div>
           {/* ✅ التكرار التلقائي — بدل إنشاء دورة يدوياً كل مرة */}
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mb-4">
+          <div className="panel p-5 mb-4">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
                 <h3 className="font-bold text-gray-800">التكرار التلقائي</h3>
@@ -448,7 +448,7 @@ export default function AssessmentDetail() {
                     const next = { ...rec, recurrence: e.target.value };
                     setRec(next); saveRecurrence(next);
                   }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none disabled:bg-gray-50 disabled:text-gray-400">
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none disabled:bg-paper disabled:text-gray-400">
                   <option value="none">بدون تكرار</option>
                   <option value="daily">يومي</option>
                   <option value="weekly">أسبوعي</option>
@@ -464,7 +464,7 @@ export default function AssessmentDetail() {
                   disabled={!rec.auto}
                   onChange={(e) => setRec({ ...rec, window: Number(e.target.value) })}
                   onBlur={() => rec.auto && saveRecurrence(rec)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none disabled:bg-gray-50 disabled:text-gray-400" />
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none disabled:bg-paper disabled:text-gray-400" />
               </div>
             </div>
 
@@ -509,7 +509,7 @@ export default function AssessmentDetail() {
             {rotations.map((r) => {
               const badge = statusBadges[r.status_label] || statusBadges.disabled;
               return (
-                <div key={r.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div key={r.id} className="panel p-4">
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -613,7 +613,7 @@ export default function AssessmentDetail() {
               {qSaving ? 'جاري الحفظ...' : (qModal.editing ? 'تحديث' : 'إضافة')}
             </button>
             <button onClick={() => setQModal({ open: false, editing: null })}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50">إلغاء</button>
+              className="px-4 py-2 border rounded-lg hover:bg-paper">إلغاء</button>
           </div>
         </div>
       </Modal>
@@ -655,7 +655,7 @@ export default function AssessmentDetail() {
               {assessment.questions?.map((q) => {
                 const isSelected = rotForm.selectedQuestions.hasOwnProperty(q.id);
                 return (
-                  <div key={q.id} className={`p-2 rounded ${isSelected ? 'bg-primary-50' : 'bg-gray-50'}`}>
+                  <div key={q.id} className={`p-2 rounded ${isSelected ? 'bg-primary-50' : 'bg-paper'}`}>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={isSelected}
                         onChange={(e) => {
@@ -692,7 +692,7 @@ export default function AssessmentDetail() {
               {rotSaving ? 'جاري الحفظ...' : (rotModal.editing ? 'تحديث' : 'إنشاء')}
             </button>
             <button onClick={() => setRotModal({ open: false, editing: null })}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50">إلغاء</button>
+              className="px-4 py-2 border rounded-lg hover:bg-paper">إلغاء</button>
           </div>
         </div>
       </Modal>

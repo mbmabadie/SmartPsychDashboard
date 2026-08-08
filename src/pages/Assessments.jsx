@@ -3,6 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import Modal from '../components/Modal';
 
+function Stat({ n, label, tone = 'text-ink' }) {
+  return (
+    <div className="text-center">
+      <div className={`font-mono text-xl font-medium tabular ${tone}`}>
+        {Number(n || 0).toLocaleString('en-US')}
+      </div>
+      <div className="text-micro text-ink-30 mt-0.5">{label}</div>
+    </div>
+  );
+}
+
 export default function Assessments() {
   const { api } = useAuth();
   const navigate = useNavigate();
@@ -80,63 +91,76 @@ export default function Assessments() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">الاختبارات</h1>
-          <p className="text-sm text-gray-500">إدارة الاختبارات النفسية - اضغط على اختبار لإدارة أسئلته ودوراته</p>
+      <header className="mb-6 pb-5 border-b border-ink-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="eyebrow mb-1.5">الاختبارات</div>
+            <h1 className="text-2xl font-semibold text-ink">الاختبارات النفسية</h1>
+            <p className="text-micro text-ink-50 mt-1">
+              اضغط على اختبار لإدارة أسئلته ودوراته
+            </p>
+          </div>
+          <button onClick={() => { setShowCreate(true); setErrorMsg(''); }}
+            className="btn-primary whitespace-nowrap">
+            اختبار جديد
+          </button>
         </div>
-        <button onClick={() => { setShowCreate(true); setErrorMsg(''); }}
-          className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium whitespace-nowrap">
-          + اختبار جديد
-        </button>
-      </div>
+      </header>
 
-      {loading && <div className="text-center text-gray-400 py-12">جاري التحميل...</div>}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="panel p-5 space-y-3">
+              <div className="skel h-4 w-3/5" />
+              <div className="skel h-3 w-2/5" />
+              <div className="skel h-10 w-full" />
+            </div>
+          ))}
+        </div>
+      )}
 
       {!loading && assessments.length === 0 && (
-        <div className="text-center text-gray-400 py-12 bg-white rounded-xl border-2 border-dashed border-gray-200">
-          <div className="text-4xl mb-2">📋</div>
-          <div>لا يوجد اختبارات بعد</div>
-          <div className="text-sm">ابدأ بإنشاء اختبار جديد</div>
+        <div className="panel px-5 py-20 text-center">
+          <div className="text-sm text-ink-50">لا اختبارات بعد</div>
+          <div className="text-micro text-ink-30 mt-1.5 mb-5">
+            الاختبار يحمل الأسئلة، والدورة تحدّد متى تظهر للمشاركين.
+          </div>
+          <button onClick={() => { setShowCreate(true); setErrorMsg(''); }}
+            className="btn-primary">
+            إنشاء أول اختبار
+          </button>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {assessments.map((a) => (
+        {assessments.map((a, i) => (
           <div key={a.id}
             onClick={() => navigate(`/assessments/${a.id}`)}
-            className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-800 text-lg">{a.title_ar || a.title}</h3>
-                <span className="inline-block mt-1 text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+            className="panel p-5 hover:border-primary-300 transition-colors cursor-pointer rise"
+            style={{ animationDelay: `${i * 50}ms` }}>
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-ink truncate">{a.title_ar || a.title}</h3>
+                <span className="badge badge-mute mt-1.5">
                   {categoryLabels[a.category] || a.category}
                 </span>
               </div>
-              <span className={`text-xs px-2 py-1 rounded ${a.is_active ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
-                {a.is_active ? 'نشط' : 'معطل'}
+              <span className={`badge ${a.is_active ? 'badge-ok' : 'badge-mute'}`}>
+                {a.is_active ? 'نشط' : 'معطّل'}
               </span>
             </div>
 
             {a.description_ar && (
-              <div className="text-sm text-gray-600 mb-3 line-clamp-2">{a.description_ar}</div>
+              <p className="text-sm text-ink-50 mb-3 line-clamp-2">{a.description_ar}</p>
             )}
 
+            <div className="grid grid-cols-3 gap-2 mb-3 pt-3 border-t border-ink-8">
+              <Stat n={a.questions_count} label="سؤال" />
+              <Stat n={a.rotations_count} label="دورة" />
+              <Stat n={a.active_rotations_count || 0} label="نشطة الآن"
+                    tone={a.active_rotations_count > 0 ? 'text-signal-ok' : 'text-ink-30'} />
+            </div>
             <div className="grid grid-cols-3 gap-2 mb-3 pt-3 border-t border-gray-100">
-              <div className="text-center">
-                <div className="text-xl font-bold text-gray-800">{a.questions_count}</div>
-                <div className="text-xs text-gray-500">سؤال</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-gray-800">{a.rotations_count}</div>
-                <div className="text-xs text-gray-500">دورة</div>
-              </div>
-              <div className="text-center">
-                <div className={`text-xl font-bold ${a.active_rotations_count > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                  {a.active_rotations_count || 0}
-                </div>
-                <div className="text-xs text-gray-500">نشطة الآن</div>
-              </div>
             </div>
 
             <div className="flex gap-2 pt-2">

@@ -85,7 +85,7 @@ export default function Export() {
       </div>
 
       {/* ═══ تصنيف التطبيقات ═══ */}
-      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mb-6">
+      <div className="panel p-5 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h2 className="font-bold text-gray-800">تصنيف التطبيقات</h2>
@@ -151,7 +151,7 @@ export default function Export() {
       </div>
 
       {/* ═══ نطاق التاريخ ═══ */}
-      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mb-6">
+      <div className="panel p-5 mb-6">
         <h2 className="font-bold text-gray-800 mb-1">نطاق التاريخ</h2>
         <p className="text-xs text-gray-500 mb-4">
           اتركه فارغاً لتصدير كل البيانات. لا ينطبق على المستخدمين وإجابات الاختبارات.
@@ -170,7 +170,7 @@ export default function Export() {
           {(from || to) && (
             <div className="flex items-end">
               <button onClick={() => { setFrom(''); setTo(''); }}
-                className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
+                className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-paper">
                 مسح
               </button>
             </div>
@@ -182,7 +182,7 @@ export default function Export() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {datasets.map((d) => (
           <div key={d.key}
-            className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-primary-300 hover:shadow-md transition-all">
+            className="panel p-5 hover:border-primary-300 hover:shadow-md transition-all">
             <div className="text-3xl mb-2">{d.icon}</div>
             <h3 className="font-bold text-gray-800">{d.label}</h3>
             <p className="text-xs text-gray-500 mb-1 h-8">{d.desc}</p>

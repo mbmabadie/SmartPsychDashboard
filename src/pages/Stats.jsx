@@ -28,8 +28,8 @@ export default function Stats() {
     datasets: [{
       label: 'متوسط الخطوات',
       data: activityData.map((d) => Math.round(d.avg_steps || 0)),
-      borderColor: '#1197CC',
-      backgroundColor: 'rgba(17, 151, 204, 0.1)',
+      borderColor: '#28A1D1',
+      backgroundColor: 'rgba(40, 161, 209, 0.12)',
       tension: 0.3,
       fill: true,
     }],
@@ -40,7 +40,7 @@ export default function Stats() {
     datasets: [{
       label: 'متوسط ساعات النوم',
       data: sleepData.map((d) => ((d.avg_duration || 0) / 60).toFixed(1)),
-      backgroundColor: '#9333EA',
+      backgroundColor: '#28A1D1',
       borderRadius: 4,
     }],
   };
@@ -49,13 +49,16 @@ export default function Stats() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">الإحصائيات</h1>
+      <header className="mb-6 pb-5 border-b border-ink-8">
+        <div className="eyebrow mb-1.5">الإحصائيات</div>
+        <h1 className="text-2xl font-semibold text-ink">اتجاهات الدراسة</h1>
+      </header>
       <p className="text-gray-500 mb-8">تحليلات مفصلة عن البيانات</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Activity Chart */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-800 mb-4">النشاط اليومي (آخر 30 يوم)</h3>
+        <div className="panel p-5">
+          <h3 className="eyebrow mb-4 block">النشاط اليومي (آخر 30 يوم)</h3>
           {activityData.length > 0 ? (
             <Line data={activityChartData} options={chartOptions} />
           ) : (
@@ -64,8 +67,8 @@ export default function Stats() {
         </div>
 
         {/* Sleep Chart */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-800 mb-4">جودة النوم</h3>
+        <div className="panel p-5">
+          <h3 className="eyebrow mb-4 block">جودة النوم</h3>
           {sleepData.length > 0 ? (
             <Bar data={sleepChartData} options={chartOptions} />
           ) : (
@@ -74,8 +77,8 @@ export default function Stats() {
         </div>
 
         {/* Assessment Stats */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 lg:col-span-2">
-          <h3 className="font-bold text-gray-800 mb-4">نتائج الاختبارات</h3>
+        <div className="panel p-5 lg:col-span-2">
+          <h3 className="eyebrow mb-4 block">نتائج الاختبارات</h3>
           {assessmentStats.length > 0 ? (
             <div className="space-y-3">
               {assessmentStats.map((a) => (

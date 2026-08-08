@@ -13,6 +13,7 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -37,6 +38,15 @@
     outline: 2px solid theme('colors.primary.400');
     outline-offset: 2px;
     border-radius: 3px;
+  }
+
+  /* تمرير مرن — زخم على iOS/الترackpad ولا ارتداد يقطع القراءة */
+  .scroll-y {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
   }
 
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -118,6 +128,52 @@
   .label {
     @apply block text-micro uppercase text-ink-50 mb-1.5 font-medium;
     font-family: theme('fontFamily.mono');
+  }
+}
+
+@layer components {
+  /* ── التبويبات: شريط مقسّم، لا خط سفلي باهت ── */
+  .seg {
+    @apply inline-flex p-1 gap-1 bg-ink-8/60 rounded-lg;
+  }
+  .seg-item {
+    @apply inline-flex items-center gap-2 px-3 h-8 rounded-md text-sm
+           text-ink-50 transition-colors whitespace-nowrap;
+  }
+  .seg-item:hover { @apply text-ink-70; }
+  .seg-item[data-on='true'] {
+    @apply bg-panel text-ink font-medium;
+  }
+  .seg-count {
+    @apply font-mono text-[10px] px-1.5 rounded bg-ink-8 text-ink-50;
+  }
+  .seg-item[data-on='true'] .seg-count {
+    @apply bg-primary-50 text-primary-500;
+  }
+
+  /* ── صف بيانات ── */
+  .drow {
+    @apply flex items-center gap-3 px-5 py-2.5 border-b border-ink-8/60
+           last:border-0 transition-colors;
+  }
+  .drow:hover { @apply bg-primary-50/30; }
+
+  /* ── قيمة رقمية داخل صف ── */
+  .dnum {
+    @apply font-mono text-sm text-ink tabular shrink-0;
+  }
+
+  /* ── شريط نسبة رفيع ── */
+  .meter {
+    @apply h-1 bg-ink-8 rounded-full overflow-hidden;
+  }
+  .meter > i {
+    @apply block h-full bg-primary-400 rounded-full;
+  }
+
+  /* ── تحميل هيكلي ── */
+  .skel {
+    @apply bg-ink-8 rounded animate-pulse;
   }
 }
 
