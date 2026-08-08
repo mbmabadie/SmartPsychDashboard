@@ -35,6 +35,11 @@ export default function AssessmentDetail() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('questions');
 
+  // ✅ إعدادات التكرار التلقائي
+  const [rec, setRec] = useState({ recurrence: 'none', window: 7, auto: false });
+  const [recSaving, setRecSaving] = useState(false);
+  const [recMsg, setRecMsg] = useState(null);
+
   // Question modal
   const [qModal, setQModal] = useState({ open: false, editing: null });
   const [qForm, setQForm] = useState({ question_text_ar: '', is_required: true, options: defaultOptions() });
@@ -59,6 +64,61 @@ export default function AssessmentDetail() {
       if (res.success) setAssessment(res.data);
     } catch (e) { console.error(e); }
     setLoading(false);
+  };
+
+  useEffect(() => {
+    if (assessment) {
+      setRec({
+        recurrence: assessment.recurrence || 'none',
+        window: assessment.recurrence_window_days || 7,
+        auto: !!assessment.auto_generate,
+      });
+    }
+  }, [assessment]);
+
+  const saveRecurrence = async (next) => {
+    setRecSaving(true);
+    setRecMsg(null);
+    try {
+      const res = await api(`/assessments/${id}/recurrence`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          recurrence: next.recurrence,
+          recurrence_window_days: next.window,
+          auto_generate: next.auto,
+        }),
+      });
+      setRecMsg(res.success
+        ? { ok: true, text: 'تم الحفظ' }
+        : { ok: false, text: res.message || 'فشل الحفظ' });
+    } catch (e) {
+      setRecMsg({ ok: false, text: 'خطأ: ' + e.message });
+    }
+    setRecSaving(false);
+  };
+
+  const generateNow = async () => {
+    setRecSaving(true);
+    setRecMsg(null);
+    try {
+      const res = await api('/assessments/rotations/generate-now', { method: 'POST' });
+      if (res.success) {
+        const mine = (res.created || []).filter((c) => String(c.assessment_id) === String(id));
+        setRecMsg({
+          ok: true,
+          text: mine.length
+            ? `تم إنشاء دورة: ${mine[0].start_date} ← ${mine[0].end_date}`
+            : (res.skipped?.find((x) => String(x.assessment_id) === String(id))?.reason
+                || 'لا توجد دورة مستحقة حالياً'),
+        });
+        await loadRotations();
+      } else {
+        setRecMsg({ ok: false, text: res.message || 'فشل التوليد' });
+      }
+    } catch (e) {
+      setRecMsg({ ok: false, text: 'خطأ: ' + e.message });
+    }
+    setRecSaving(false);
   };
 
   const loadRotations = async () => {
@@ -360,6 +420,73 @@ export default function AssessmentDetail() {
       {/* Rotations Tab */}
       {activeTab === 'rotations' && (
         <div>
+          {/* ✅ التكرار التلقائي — بدل إنشاء دورة يدوياً كل مرة */}
+          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mb-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div>
+                <h3 className="font-bold text-gray-800">التكرار التلقائي</h3>
+                <p className="text-xs text-gray-500">
+                  ينشئ الدورة التالية تلقائياً بنفس أسئلة آخر دورة
+                </p>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer shrink-0">
+                <input type="checkbox" checked={rec.auto}
+                  onChange={(e) => {
+                    const next = { ...rec, auto: e.target.checked };
+                    setRec(next); saveRecurrence(next);
+                  }}
+                  className="w-4 h-4 accent-primary-500" />
+                <span className="text-sm font-medium text-gray-700">مفعّل</span>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-600 block mb-1">التكرار</label>
+                <select value={rec.recurrence} disabled={!rec.auto}
+                  onChange={(e) => {
+                    const next = { ...rec, recurrence: e.target.value };
+                    setRec(next); saveRecurrence(next);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none disabled:bg-gray-50 disabled:text-gray-400">
+                  <option value="none">بدون تكرار</option>
+                  <option value="daily">يومي</option>
+                  <option value="weekly">أسبوعي</option>
+                  <option value="biweekly">كل أسبوعين</option>
+                  <option value="monthly">شهري</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-600 block mb-1">
+                  مدة الدورة (أيام)
+                </label>
+                <input type="number" min="1" max="365" value={rec.window}
+                  disabled={!rec.auto}
+                  onChange={(e) => setRec({ ...rec, window: Number(e.target.value) })}
+                  onBlur={() => rec.auto && saveRecurrence(rec)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none disabled:bg-gray-50 disabled:text-gray-400" />
+              </div>
+            </div>
+
+            {rec.auto && rec.recurrence !== 'none' && (
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="text-xs text-gray-500 flex-1">
+                  يُفحص كل ساعة تلقائياً. تحتاج دورة واحدة موجودة لينسخ أسئلتها.
+                </div>
+                <button onClick={generateNow} disabled={recSaving}
+                  className="px-3 py-1.5 text-xs border border-primary-300 text-primary-600 rounded-lg hover:bg-primary-50 disabled:opacity-50 whitespace-nowrap">
+                  {recSaving ? 'جاري...' : 'توليد الآن'}
+                </button>
+              </div>
+            )}
+
+            {recMsg && (
+              <div className={`mt-3 text-xs px-3 py-2 rounded-lg ${recMsg.ok ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                {recMsg.ok ? '✅ ' : '⚠️ '}{recMsg.text}
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-between items-center mb-4">
             <div className="text-sm text-gray-500">
               الدورات تحدد أي أسئلة تظهر للمستخدمين وفي أي فترة زمنية

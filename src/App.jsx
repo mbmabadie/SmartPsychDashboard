@@ -8,6 +8,7 @@ import UserDetails from './pages/UserDetails';
 import Assessments from './pages/Assessments';
 import AssessmentDetail from './pages/AssessmentDetail';
 import Stats from './pages/Stats';
+import Export from './pages/Export';
 
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
@@ -116,6 +117,7 @@ function AppShell() {
           <Route path="/assessments" element={<Assessments />} />
           <Route path="/assessments/:id" element={<AssessmentDetail />} />
           <Route path="/stats" element={<Stats />} />
+          <Route path="/export" element={<Export />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
