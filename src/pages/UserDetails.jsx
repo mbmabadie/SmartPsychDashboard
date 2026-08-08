@@ -26,6 +26,49 @@ export default function UserDetails() {
     }).catch(console.error);
   }, [id, activeTab]);
 
+  // ✅ إعادة تعيين كلمة المرور
+  //
+  // بديل عملي لـ "نسيت كلمة المرور" بالبريد — المشروع ما فيه
+  // خدمة SMTP، فالحوار القديم في التطبيق كان وهمياً بالكامل.
+  const [showReset, setShowReset] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
+  const [resetMsg, setResetMsg] = useState(null);
+
+  const generatePassword = () => {
+    const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let out = '';
+    const rnd = new Uint32Array(12);
+    crypto.getRandomValues(rnd);
+    for (let i = 0; i < 12; i++) out += chars[rnd[i] % chars.length];
+    setNewPassword(out);
+    setResetMsg(null);
+  };
+
+  const resetPassword = async () => {
+    if (newPassword.length < 8) {
+      setResetMsg({ ok: false, text: 'كلمة المرور 8 أحرف على الأقل' });
+      return;
+    }
+    setResetting(true);
+    setResetMsg(null);
+    try {
+      const res = await api(`/admin/users/${id}/reset-password`, {
+        method: 'POST',
+        body: JSON.stringify({ new_password: newPassword }),
+      });
+      setResetMsg(
+        res.success
+          ? { ok: true, text: 'تم التعيين. أرسل كلمة المرور للمستخدم بطريقة آمنة.' }
+          : { ok: false, text: res.message || 'فشل التعيين' }
+      );
+    } catch (e) {
+      setResetMsg({ ok: false, text: 'خطأ: ' + e.message });
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const toggleUser = async () => {
     if (!confirm('هل أنت متأكد؟')) return;
     const res = await api(`/admin/users/${id}/toggle`, { method: 'PUT' });
@@ -61,11 +104,63 @@ export default function UserDetails() {
               العمر: {user.age || 'غير محدد'} · سُجّل: {formatDate(user.created_at)}
             </div>
           </div>
-          <button onClick={toggleUser}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${user.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
-            {user.is_active ? 'تعطيل الحساب' : 'تفعيل الحساب'}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button onClick={() => { setShowReset(!showReset); setResetMsg(null); }}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition whitespace-nowrap">
+              إعادة تعيين كلمة المرور
+            </button>
+            <button onClick={toggleUser}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap ${user.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+              {user.is_active ? 'تعطيل الحساب' : 'تفعيل الحساب'}
+            </button>
+          </div>
         </div>
+
+        {/* لوحة إعادة تعيين كلمة المرور */}
+        {showReset && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="text-sm font-semibold text-amber-900 mb-1">
+                تعيين كلمة مرور جديدة لـ {user.full_name}
+              </div>
+              <p className="text-xs text-amber-800 mb-3">
+                لا يوجد نظام بريد في المشروع، فالاستعادة تتم من هنا.
+                بعد التعيين، أوصل كلمة المرور للمستخدم بطريقة آمنة واطلب
+                منه تغييرها من التطبيق: الإعدادات ← الخصوصية والأمان.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={newPassword}
+                  onChange={(e) => { setNewPassword(e.target.value); setResetMsg(null); }}
+                  placeholder="كلمة مرور جديدة (8 أحرف على الأقل)"
+                  dir="ltr"
+                  className="flex-1 px-3 py-2 border border-amber-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-400 font-mono"
+                />
+                <button onClick={generatePassword}
+                  className="px-3 py-2 text-sm border border-amber-300 rounded-lg hover:bg-amber-100 whitespace-nowrap">
+                  توليد
+                </button>
+                <button onClick={resetPassword} disabled={resetting}
+                  className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 whitespace-nowrap">
+                  {resetting ? 'جاري...' : 'تعيين'}
+                </button>
+              </div>
+
+              {resetMsg && (
+                <div className={`mt-3 text-sm px-3 py-2 rounded-lg ${resetMsg.ok ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                  {resetMsg.ok ? '✅ ' : '⚠️ '}{resetMsg.text}
+                  {resetMsg.ok && (
+                    <div className="mt-2 font-mono text-xs bg-white px-2 py-1 rounded border select-all" dir="ltr">
+                      {newPassword}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats */}
