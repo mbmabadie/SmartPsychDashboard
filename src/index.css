@@ -1,11 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: -apple-system, 'Segoe UI', Tahoma, sans-serif;
-  background: #f8fafc;
+/* ═══════════════════════════════════════════════════════════
+   Smart Psych — لوحة الإدارة
+   الاتجاه: قراءة جهاز قياس. خطوط شعرية، أرقام جدولية، بلا ظلال.
+   ═══════════════════════════════════════════════════════════ */
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans;
+    font-weight: 400;
+  }
+
+  /* كل الأرقام جدولية — تتحاذى رأسياً في الجداول والشبكات */
+  .tabular,
+  table,
+  .readout {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  ::selection {
+    @apply bg-primary-100 text-ink;
+  }
+
+  /* تركيز واضح بلوحة المفاتيح — جزء من أرضية الجودة */
+  :focus-visible {
+    outline: 2px solid theme('colors.primary.400');
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: theme('colors.ink.15');
+    border-radius: 99px;
+    border: 3px solid theme('colors.paper');
+  }
+  ::-webkit-scrollbar-thumb:hover { background: theme('colors.ink.30'); }
 }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+@layer components {
+  /* ── اللوحة: الحاوية الأساسية. خط شعري بدل ظل ── */
+  .panel {
+    @apply bg-panel border border-ink-8 rounded-panel;
+  }
+
+  /* ── العنوان الصغير فوق القسم ── */
+  .eyebrow {
+    @apply text-micro uppercase text-ink-50 font-medium;
+    font-family: theme('fontFamily.mono');
+  }
+
+  /* ── خلية القراءة: العنصر المميّز ──
+     الرقم بـ mono على خط أساس رفيع مع علامة لكنة صغيرة */
+  .readout-value {
+    @apply font-mono text-read font-medium text-ink leading-none;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .readout-rule {
+    @apply relative h-px bg-ink-8 mt-4;
+  }
+  .readout-rule::before {
+    content: '';
+    @apply absolute right-0 -top-px h-[3px] w-8 bg-primary-400;
+  }
+
+  /* ── الجداول ── */
+  .t-head {
+    @apply text-micro uppercase text-ink-50 font-medium text-right py-3 px-4
+           border-b border-ink-8;
+    font-family: theme('fontFamily.mono');
+  }
+  .t-cell {
+    @apply py-3 px-4 text-sm border-b border-ink-8/60 align-middle;
+  }
+  .t-row {
+    @apply transition-colors;
+  }
+  .t-row:hover { @apply bg-primary-50/40; }
+
+  /* ── الشارات ── */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-micro font-medium;
+  }
+  .badge-ok   { @apply bg-signal-ok/10   text-signal-ok; }
+  .badge-warn { @apply bg-signal-warn/10 text-signal-warn; }
+  .badge-stop { @apply bg-signal-stop/10 text-signal-stop; }
+  .badge-mute { @apply bg-ink-8 text-ink-50; }
+
+  /* ── الأزرار ── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 h-9 rounded-md
+           text-sm font-medium transition-colors disabled:opacity-40
+           disabled:cursor-not-allowed;
+  }
+  .btn-primary { @apply btn bg-primary-400 text-white hover:bg-primary-500; }
+  .btn-quiet   { @apply btn border border-ink-15 text-ink-70 hover:bg-ink-8/50; }
+  .btn-danger  { @apply btn bg-signal-stop/10 text-signal-stop hover:bg-signal-stop/20; }
+
+  /* ── الحقول ── */
+  .field {
+    @apply w-full h-10 px-3 bg-panel border border-ink-15 rounded-md text-sm
+           text-ink placeholder:text-ink-30 outline-none
+           focus:border-primary-400 transition-colors;
+  }
+  .label {
+    @apply block text-micro uppercase text-ink-50 mb-1.5 font-medium;
+    font-family: theme('fontFamily.mono');
+  }
+}
+
+/* ── الحركة: هادئة، ومحترمة لتفضيل تقليل الحركة ── */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.rise { animation: rise .38s cubic-bezier(.22,.61,.36,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

@@ -10,77 +10,179 @@ export default function Dashboard() {
   const [stats, setStats] = useState({});
   const [recentUsers, setRecentUsers] = useState([]);
   const [recentSyncs, setRecentSyncs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api('/admin/dashboard').then((res) => {
-      if (res.success) {
-        setStats(res.data.stats);
-        setRecentUsers(res.data.recent_users);
-        setRecentSyncs(res.data.recent_syncs);
-      }
-    }).catch(console.error);
+    api('/admin/dashboard')
+      .then((res) => {
+        if (res.success) {
+          setStats(res.data.stats);
+          setRecentUsers(res.data.recent_users);
+          setRecentSyncs(res.data.recent_syncs);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
+
+  const today = new Date().toLocaleDateString('ar-EG', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
+  const total = stats.total_users || 0;
+  const active = stats.active_users_today || 0;
+  const rate = total > 0 ? Math.round((active / total) * 100) : 0;
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">لوحة التحكم</h1>
-      <p className="text-gray-500 mb-8">نظرة عامة على النظام</p>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        <StatsCard label="إجمالي المستخدمين" value={stats.total_users || 0} color="blue"
-          icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-        <StatsCard label="نشطين اليوم" value={stats.active_users_today || 0} color="green"
-          icon="M13 10V3L4 14h7v7l9-11h-7z" />
-        <StatsCard label="جلسات نوم" value={stats.total_sleep_records || 0} color="purple"
-          icon="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        <StatsCard label="اختبارات مكتملة" value={stats.total_assessments_completed || 0} color="orange"
-          icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </div>
-
-      {/* Two Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Users */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-800 mb-4">آخر المستخدمين المسجلين</h3>
-          <div className="space-y-3">
-            {recentUsers.map((user) => (
-              <div key={user.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary-50 rounded-full flex items-center justify-center">
-                    <span className="text-primary-500 font-semibold">{user.full_name?.charAt(0) || '?'}</span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-800">{user.full_name}</div>
-                    <div className="text-xs text-gray-500">{user.email}</div>
-                  </div>
-                </div>
-                <button onClick={() => navigate(`/users/${user.id}`)} className="text-primary-500 text-sm hover:underline">عرض</button>
-              </div>
-            ))}
-            {recentUsers.length === 0 && <div className="text-center text-gray-400 py-4">لا يوجد مستخدمين</div>}
+      {/* ── الترويسة ──
+          التاريخ بارز لأن كل ما في هذه اللوحة قياس مؤرَّخ. */}
+      <header className="mb-8 pb-5 border-b border-ink-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="eyebrow mb-1.5">نظرة عامة</div>
+            <h1 className="text-2xl font-semibold text-ink">حالة الدراسة</h1>
+          </div>
+          <div className="text-left">
+            <div className="font-mono text-sm text-ink-70 tabular">{today}</div>
+            <div className="text-micro text-ink-30 mt-0.5">
+              {loading ? 'جارِ القراءة…' : 'محدَّث الآن'}
+            </div>
           </div>
         </div>
+      </header>
 
-        {/* Recent Syncs */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-800 mb-4">آخر عمليات المزامنة</h3>
-          <div className="space-y-2 max-h-80 overflow-y-auto">
-            {recentSyncs.map((sync) => (
-              <div key={sync.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 text-sm">
-                <div>
-                  <div className="font-medium text-gray-700">{sync.full_name}</div>
-                  <div className="text-xs text-gray-500">{formatDate(sync.synced_at)}</div>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded ${sync.status === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                  {sync.records_synced} سجل
-                </span>
-              </div>
-            ))}
-            {recentSyncs.length === 0 && <div className="text-center text-gray-400 py-4">لا توجد عمليات</div>}
-          </div>
-        </div>
+      {/* ── خلايا القراءة ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatsCard
+          index={0}
+          label="المشاركون"
+          value={total}
+          hint={total ? `${active} نشط اليوم` : 'لا مشاركين بعد'}
+          icon="M16 19v-1a4 4 0 00-4-4H8a4 4 0 00-4 4v1M12 3a4 4 0 100 8 4 4 0 000-8z"
+        />
+        <StatsCard
+          index={1}
+          label="نشطون اليوم"
+          value={active}
+          unit={total ? `/ ${total}` : ''}
+          hint={total ? `معدّل المشاركة ${rate}%` : '—'}
+          icon="M13 2L3 14h8l-1 8 10-12h-8l1-8z"
+        />
+        <StatsCard
+          index={2}
+          label="جلسات نوم"
+          value={stats.total_sleep_records || 0}
+          hint="مسجّلة ومكتملة"
+          icon="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"
+        />
+        <StatsCard
+          index={3}
+          label="اختبارات مكتملة"
+          value={stats.total_assessments_completed || 0}
+          hint="إجابات مستلمة"
+          icon="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+        />
       </div>
+
+      {/* ── لوحتان ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* المشاركون الجدد */}
+        <section className="panel lg:col-span-3 rise" style={{ animationDelay: '220ms' }}>
+          <div className="px-5 h-12 flex items-center justify-between border-b border-ink-8">
+            <span className="eyebrow">أحدث المشاركين</span>
+            <button
+              onClick={() => navigate('/users')}
+              className="text-micro text-primary-500 hover:text-primary-600 font-mono"
+            >
+              عرض الكل ←
+            </button>
+          </div>
+
+          {recentUsers.length === 0 ? (
+            <Empty
+              title={loading ? 'جارِ القراءة…' : 'لا مشاركين بعد'}
+              body={loading ? '' : 'سيظهر المشاركون هنا بمجرّد تسجيلهم من التطبيق.'}
+            />
+          ) : (
+            <ul>
+              {recentUsers.map((u) => (
+                <li
+                  key={u.id}
+                  className="t-row flex items-center gap-3 px-5 py-3
+                             border-b border-ink-8/60 last:border-0 cursor-pointer"
+                  onClick={() => navigate(`/users/${u.id}`)}
+                >
+                  <div className="w-9 h-9 rounded-full bg-primary-50 border border-primary-100
+                                  flex items-center justify-center shrink-0">
+                    <span className="text-primary-500 font-semibold text-sm">
+                      {u.full_name?.trim()?.charAt(0) || '؟'}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-ink truncate">{u.full_name}</div>
+                    <div className="text-micro text-ink-30 truncate font-mono">{u.email}</div>
+                  </div>
+                  <svg className="w-4 h-4 text-ink-15 shrink-0" fill="none"
+                       stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* سجلّ المزامنة */}
+        <section className="panel lg:col-span-2 rise" style={{ animationDelay: '275ms' }}>
+          <div className="px-5 h-12 flex items-center border-b border-ink-8">
+            <span className="eyebrow">سجلّ المزامنة</span>
+          </div>
+
+          {recentSyncs.length === 0 ? (
+            <Empty
+              title={loading ? 'جارِ القراءة…' : 'لا عمليات مزامنة'}
+              body={loading ? '' : 'يرفع التطبيق البيانات تلقائياً عند توفّر الإنترنت.'}
+            />
+          ) : (
+            <ul className="max-h-[22rem] overflow-y-auto">
+              {recentSyncs.map((s) => (
+                <li
+                  key={s.id}
+                  className="flex items-center gap-3 px-5 py-2.5
+                             border-b border-ink-8/60 last:border-0"
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      s.status === 'success' ? 'bg-signal-ok' : 'bg-signal-stop'
+                    }`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-ink-70 truncate">{s.full_name}</div>
+                    <div className="text-micro text-ink-30 font-mono tabular">
+                      {formatDate(s.synced_at)}
+                    </div>
+                  </div>
+                  <span className="font-mono text-sm text-ink tabular shrink-0">
+                    {Number(s.records_synced || 0).toLocaleString('en-US')}
+                  </span>
+                  <span className="text-micro text-ink-30 shrink-0">سجل</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/** حالة فارغة: دعوة للفعل أو تفسير، لا مجرّد "لا يوجد" */
+function Empty({ title, body }) {
+  return (
+    <div className="px-5 py-12 text-center">
+      <div className="text-sm text-ink-50">{title}</div>
+      {body && <div className="text-micro text-ink-30 mt-1.5 max-w-xs mx-auto">{body}</div>}
     </div>
   );
 }

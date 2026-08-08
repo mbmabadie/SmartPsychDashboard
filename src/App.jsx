@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
+import Logo from './components/Logo';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
@@ -18,6 +19,15 @@ const PRODUCTION_API_URL = 'https://api.smartpsych.cloud/api';
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('admin_token') || '');
 
+  // ✅ بيانات المشرف — السيرفر يرجعها عند الدخول لكنها كانت تُهمَل
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('admin_user') || 'null');
+    } catch {
+      return null;
+    }
+  });
+
   const defaultApiUrl = window.location.hostname === 'localhost'
     ? 'http://localhost:3000/api'
     : PRODUCTION_API_URL;
@@ -33,14 +43,22 @@ export default function App() {
   const [apiUrl, setApiUrl] = useState((isStaleUrl ? null : savedApiUrl) || defaultApiUrl);
   const isAuth = !!token;
 
-  const login = (newToken) => {
+  const login = (newToken, adminUser = null) => {
     setToken(newToken);
     localStorage.setItem('admin_token', newToken);
+    if (adminUser) {
+      setUser(adminUser);
+      localStorage.setItem('admin_user', JSON.stringify(adminUser));
+    }
   };
+
   const logout = () => {
     setToken('');
+    setUser(null);
     localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
   };
+
   const updateApiUrl = (url) => {
     setApiUrl(url);
     localStorage.setItem('admin_api_url', url);
@@ -59,7 +77,7 @@ export default function App() {
     return res.json();
   };
 
-  const authValue = { token, apiUrl, isAuth, login, logout, updateApiUrl, api };
+  const authValue = { token, user, apiUrl, isAuth, login, logout, updateApiUrl, api };
 
   if (!isAuth) {
     return (
@@ -76,50 +94,49 @@ export default function App() {
   );
 }
 
-// ✅ shell منفصل ليستخدم useLocation و state
 function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // إغلاق الـ sidebar عند تغيير الـ route
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [location.pathname]);
+  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* ✅ Top bar فقط على الموبايل (لزر الـ menu) */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-20 bg-white border-b border-gray-200 px-4 h-14 flex items-center justify-between">
-        <button onClick={() => setSidebarOpen(true)} className="p-2 -m-2 text-gray-700">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      {/* شريط علوي على الموبايل فقط */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-20 bg-panel border-b border-ink-8
+                         h-14 px-4 flex items-center justify-between">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 -m-2 text-ink-70"
+          aria-label="فتح القائمة"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+            <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
         <div className="flex items-center gap-2">
-          <div className="p-1 bg-primary-50 rounded">
-            <svg className="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-          </div>
-          <span className="font-bold text-gray-800 text-sm">Smart Psych</span>
+          <Logo size={22} className="text-primary-400" />
+          <span className="font-semibold text-ink text-sm">Smart Psych</span>
         </div>
-        <div className="w-10" /> {/* spacer للموازنة */}
+        <div className="w-9" />
       </header>
 
-      {/* ✅ Main - بدون margin على الموبايل، مع mr-64 على md فأكثر */}
-      <main className="flex-1 md:mr-64 pt-14 md:pt-0 p-4 md:p-8 overflow-x-hidden min-w-0">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/users/:id" element={<UserDetails />} />
-          <Route path="/assessments" element={<Assessments />} />
-          <Route path="/assessments/:id" element={<AssessmentDetail />} />
-          <Route path="/stats" element={<Stats />} />
-          <Route path="/export" element={<Export />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      <main className="md:mr-60 pt-14 md:pt-0 px-4 md:px-8 py-5 md:py-8
+                       min-w-0 overflow-x-hidden">
+        <div className="max-w-[1180px] mx-auto">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/users/:id" element={<UserDetails />} />
+            <Route path="/assessments" element={<Assessments />} />
+            <Route path="/assessments/:id" element={<AssessmentDetail />} />
+            <Route path="/stats" element={<Stats />} />
+            <Route path="/export" element={<Export />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
       </main>
     </div>
   );
